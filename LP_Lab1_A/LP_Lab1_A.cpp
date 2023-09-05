@@ -34,9 +34,9 @@ int main() {
 	int maxGradeWidth = 0;
 
 	for (const auto& student : mainStudents) {
-		maxNameWidth = max(maxNameWidth, static_cast<int>(student.name.length()));
-		maxYearWidth = max(maxYearWidth, static_cast<int>(to_string(student.year).length()));
-		maxGradeWidth = max(maxGradeWidth, static_cast<int>(to_string(student.grade).length()));
+		maxNameWidth = max(maxNameWidth, int(student.name.length()));
+		maxYearWidth = max(maxYearWidth, int(to_string(student.year).length()));
+		maxGradeWidth = max(maxGradeWidth, int(to_string(student.grade).length()));
 	}
 
 	// Print the header
