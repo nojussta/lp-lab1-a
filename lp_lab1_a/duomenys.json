@@ -1,0 +1,99 @@
+﻿{
+  "students": [
+    {
+      "name": "Antanas",
+      "year": 1,
+      "grade": 6.95
+    },
+    {
+      "name": "Kazys",
+      "year": 2,
+      "grade": 8.65
+    },
+    {
+      "name": "Petras",
+      "year": 2,
+      "grade": 7.01
+    },
+    {
+      "name": "Sonata",
+      "year": 3,
+      "grade": 9.13
+    },
+    {
+      "name": "Jonas",
+      "year": 1,
+      "grade": 6.95
+    },
+    {
+      "name": "Martynas",
+      "year": 3,
+      "grade": 9.13
+    },
+    {
+      "name": "Arturas",
+      "year": 2,
+      "grade": 7.01
+    },
+    {
+      "name": "Vacys",
+      "year": 2,
+      "grade": 8.65
+    },
+    {
+      "name": "Robertas",
+      "year": 3,
+      "grade": 6.43
+    },
+    {
+      "name": "Mykolas",
+      "year": 1,
+      "grade": 6.95
+    },
+    {
+      "name": "Aldona",
+      "year": 3,
+      "grade": 9.13
+    },
+    {
+      "name": "Asta",
+      "year": 2,
+      "grade": 7.01
+    },
+    {
+      "name": "Viktoras",
+      "year": 2,
+      "grade": 8.65
+    },
+    {
+      "name": "Arturas",
+      "year": 5,
+      "grade": 8.32
+    },
+    {
+      "name": "Vytas",
+      "year": 3,
+      "grade": 7.85
+    },
+    {
+      "name": "Jonas",
+      "year": 1,
+      "grade": 6.95
+    },
+    {
+      "name": "Zigmas",
+      "year": 3,
+      "grade": 9.13
+    },
+    {
+      "name": "Arturas",
+      "year": 2,
+      "grade": 7.01
+    },
+    {
+      "name": "Simas",
+      "year": 3,
+      "grade": 6.43
+    }
+  ]
+}
