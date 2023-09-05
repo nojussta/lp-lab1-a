@@ -29,9 +29,33 @@ int main() {
 		mainStudents.push_back(student);
 	}
 
+	int maxNameWidth = 0;
+	int maxYearWidth = 0;
+	int maxGradeWidth = 0;
+
 	for (const auto& student : mainStudents) {
-		cout << "Name: " << student.name << " Year: " << student.year << " Grade: " << student.grade << '\n';
+		maxNameWidth = max(maxNameWidth, static_cast<int>(student.name.length()));
+		maxYearWidth = max(maxYearWidth, static_cast<int>(to_string(student.year).length()));
+		maxGradeWidth = max(maxGradeWidth, static_cast<int>(to_string(student.grade).length()));
 	}
+
+	// Print the header
+	cout << " ---------------------------" << endl;
+	cout << " | Student Data            |" << endl;
+	cout << " ---------------------------" << endl;
+	cout << " |" << setw(maxNameWidth) << "Name     " << " |"
+		<< setw(maxYearWidth) << "Year" << "|"
+		<< setw(maxGradeWidth) << "    Grade" << "|" << '\n';
+	cout << " ---------------------------" << endl;
+
+	// Print the student data with adjusted widths
+	for (const auto& student : mainStudents) {
+		cout << " |" << setw(maxNameWidth) << student.name << "  |"
+			<< setw(3) << student.year << " |"
+			<< setw(maxGradeWidth) << student.grade << " |" << '\n';
+	}
+
+	cout << " ---------------------------" << endl;
 
 	return 0;
 }
