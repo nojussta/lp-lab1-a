@@ -1,7 +1,9 @@
-#include <iostream>
+﻿#include <iostream>
 #include <iomanip>
-#include "json.hpp"
 #include <fstream>
+#include <condition_variable>
+#include "json.hpp"
+
 
 using namespace std;
 using json = nlohmann::json;
@@ -13,6 +15,65 @@ struct Student {
 	double grade;
 	string hashed;
 };
+
+// DataMonitor class for managing student data
+class DataMonitor {
+private:
+	array<Student, 19> dataBuffer; // Fixed-size array
+	int count = 0; // Keeps track of the number of elements in the buffer
+	condition_variable dataCondition;
+
+public:
+	mutex monitorMutex;
+	bool isRunning = true;
+	bool shouldReturnEmpty = false;
+
+	// 1: Nuskaito duomenų failą į lokalų masyvą, sąrašą ar kitą duomenų struktūrą;
+	// Notify waiting threads that data is available
+	void notify() {
+		dataCondition.notify_all();
+	}
+
+	// 3: Į duomenų monitorių, įrašo visus nuskaitytus duomenis po vieną. Jei monitorius
+	// yra pilnas, gija blokuojama, kol atsiras vietos.
+	// Add a student into the data buffer
+	void add(Student newStudent) {
+		unique_lock<mutex> lock(monitorMutex);
+		while (count >= 19) {
+			dataCondition.wait(lock);
+		}
+		dataBuffer[count] = newStudent;
+		count++;
+		dataCondition.notify_all();
+	}
+
+	// 6: Darbininkės gijos atlieka tokius veiksmus:
+	// Iš duomenų monitoriaus paima elementą. Jei duomenų monitorius yra tuščias, gija
+	// laukia, kol jame atsiras duomenų.
+	// Remove a student from the data buffer
+	Student remove() {
+		Student student;
+		unique_lock<mutex> lock(monitorMutex);
+		while (count == 0) {
+			if (shouldReturnEmpty) {
+				student.grade = 404;
+				return student;
+			}
+			dataCondition.wait(lock);
+		}
+		count--;
+		student = dataBuffer[count];
+		dataCondition.notify_all();
+		return student;
+	}
+
+	// Get the current count of students in the data buffer
+	int getCount() {
+		return count;
+	}
+};
+
+DataMonitor dataMonitor;
 
 int main() {
 	ifstream inputFile("duomenys.json");
