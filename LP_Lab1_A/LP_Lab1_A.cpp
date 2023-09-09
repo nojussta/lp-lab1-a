@@ -271,8 +271,8 @@ int main() {
 	dataMonitor.isRunning = false;
 	dataMonitor.shouldReturnEmpty = true;
 	dataMonitor.notify();
-	for (auto& th : threads) {
-		th.join();
+	for (auto& thread : threads) {
+		thread.join();
 	}
 
 	return 0;
