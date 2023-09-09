@@ -18,6 +18,9 @@
     <ClCompile Include="lp_lab1_a.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="sha1.hpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="duomenys.json">

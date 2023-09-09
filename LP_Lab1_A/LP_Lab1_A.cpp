@@ -3,6 +3,7 @@
 #include <fstream>
 #include <condition_variable>
 #include "json.hpp"
+#include "sha1.hpp"
 
 
 using namespace std;
@@ -13,7 +14,7 @@ struct Student {
 	string name;
 	int year;
 	double grade;
-	string hashed;
+	string hashCode;
 };
 
 // DataMonitor class for managing student data
@@ -124,6 +125,43 @@ public:
 };
 
 ResultMonitor resultMonitor;
+
+// Function to process student data
+void processStudentData(int threadCount) {
+	while (dataMonitor.isRunning || dataMonitor.getCount() > 0) {
+		Student student = dataMonitor.remove();
+		if (student.grade == 404) {
+			break;
+		}
+
+		// Calculate SHA-1 hash for student data
+		SHA1 sha1;
+		sha1.update(student.name);
+		sha1.update(std::to_string(student.year));
+		sha1.update(std::to_string(student.grade));
+		std::string hashCode = sha1.final();
+		student.hashCode = hashCode;
+
+		ostringstream os;
+		os << student.name << "| " << student.year << "| " << student.grade << "| " << hashCode;
+		string resultOutput = os.str() + "\n";
+
+		// Output what each thread is doing to both console and file
+		cout << "Thread " << threadCount << " - Processing: " << student.name << " | Year: " << student.year << " | Grade: " << student.grade << "\n";
+		cout << "Result: " << resultOutput << endl;
+
+		ofstream outputFile("result.txt", ios::app); // Open the file in append mode
+		if (outputFile) {
+			outputFile << "Thread " << threadCount << " - Processing: " << student.name << " | Year: " << student.year << " | Grade: " << student.grade << "\n";
+			outputFile << "Result: " << resultOutput << endl;
+			outputFile.close();
+		}
+
+		// 8: Patikrina, ar gautas rezultatas tinka pagal pasirinktą kriterijų. Jei tinka, jis įrašomas į rezultatų monitorių taip, kad po įrašymo monitorius liktų surikiuotas.
+		// add the result into the result monitor
+		resultMonitor.addSorted(student);
+	}
+}
 
 int main() {
 	ifstream inputFile("duomenys.json");

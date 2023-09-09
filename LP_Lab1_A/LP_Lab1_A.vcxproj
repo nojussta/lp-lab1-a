@@ -128,6 +128,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="lp_lab1_a.cpp" />
+    <ClCompile Include="sha1.hpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="duomenys.json" />
