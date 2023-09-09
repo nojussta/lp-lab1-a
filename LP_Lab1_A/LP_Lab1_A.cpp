@@ -224,18 +224,22 @@ void printHeaderAndData(const array<Student, 19>& students, int maxNameWidth, in
 }
 
 int main() {
+	const int threadCount = 4;
 	ifstream inputFile("duomenys.json");
 	string jsonData((istreambuf_iterator<char>(inputFile)), istreambuf_iterator<char>());
 	json jsonStudents = json::parse(jsonData);
-	vector<Student> mainStudents;
 
+	array<Student, 19> mainStudents; // Use a fixed-size array
+
+	// 1: Nuskaito duomenų failą į lokalų masyvą, sąrašą ar kitą duomenų struktūrą;
 	// Parse student data from JSON
+	int i = 0;
 	for (const auto& studentData : jsonStudents["students"]) {
 		Student student;
 		student.name = studentData["name"];
 		student.year = studentData["year"];
 		student.grade = studentData["grade"];
-		mainStudents.push_back(student);
+		mainStudents[i++] = student;
 	}
 
 	int maxNameWidth = 0;
@@ -248,23 +252,28 @@ int main() {
 		maxGradeWidth = max(maxGradeWidth, int(to_string(student.grade).length()));
 	}
 
-	// Print the header
-	cout << " ---------------------------" << endl;
-	cout << " | Student Data            |" << endl;
-	cout << " ---------------------------" << endl;
-	cout << " |" << setw(maxNameWidth) << "Name     " << " |"
-		<< setw(maxYearWidth) << "Year" << "|"
-		<< setw(maxGradeWidth) << "    Grade" << "|" << '\n';
-	cout << " ---------------------------" << endl;
+	// Call the printHeaderAndData function to print header and student data
+	printHeaderAndData(mainStudents, maxNameWidth, maxYearWidth, maxGradeWidth);
 
-	// Print the student data with adjusted widths
-	for (const auto& student : mainStudents) {
-		cout << " |" << setw(maxNameWidth) << student.name << "  |"
-			<< setw(3) << student.year << " |"
-			<< setw(maxGradeWidth) << student.grade << " |" << '\n';
+	thread threads[threadCount];
+	for (int i = 0; i < threadCount; ++i) {
+		threads[i] = thread(processStudentData, i + 1);
 	}
 
-	cout << " ---------------------------" << endl;
+	// 2: Paleidžia pasirinktą kiekį darbininkių gijų 2 ≤ x ≤ n/4 (n — duomenų kiekis faile).
+	// add students into the data monitor
+	for (int i = mainStudents.size() - 1; i >= 0; --i) {
+		dataMonitor.add(mainStudents[i]);
+	}
+
+	// 4: Palaukia, kol visos darbininkės gijos baigs darbą.
+	// Signal threads to stop and wait for them to finish
+	dataMonitor.isRunning = false;
+	dataMonitor.shouldReturnEmpty = true;
+	dataMonitor.notify();
+	for (auto& th : threads) {
+		th.join();
+	}
 
 	return 0;
 }
