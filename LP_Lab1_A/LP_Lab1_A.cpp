@@ -163,6 +163,66 @@ void processStudentData(int threadCount) {
 	}
 }
 
+// 2: Paleidžia pasirinktą kiekį darbininkių gijų 2 ≤ x ≤ n/4 (n — duomenų kiekis faile).
+// 4: Palaukia, kol visos darbininkės gijos baigs darbą.
+// Function to print header and student data to console and file
+void printHeaderAndData(const array<Student, 19>& students, int maxNameWidth, int maxYearWidth, int maxGradeWidth) {
+	ofstream outputFile("result.txt");
+	if (!outputFile) {
+		cerr << "Error opening the output file." << endl;
+		return;
+	}
+
+	// 10: Abu monitorius rekomenduojama realizuoti kaip klasę ar struktūrą, turinčią bent
+	// dvi operacijas: elementui įdėti bei pašalinti. Atliekant su Rust naudoti Rust monitorius.
+	// 11: Duomenys viduje saugomi fiksuoto dydžio masyve (sąrašas ar kita struktūra netinka).
+	// 12: Duomenų monitoriaus masyvo dydis neviršija pusės faile esančių elementų kiekio.
+	// 13: Rezultatų monitoriaus masyvo dydis parenkamas toks, kad tilptų visi rezultatai.
+	// 14: Su monitoriumi atliekamos operacijos, kur reikia, apsaugomos kritine sekcija, o gijų
+	// blokavimas realizuojamas sąlygine sinchronizacija, panaudojant pasirinktos kalbos
+	// priemones.
+	// 15: Duomenų monitorius turi galėti tiek prisipildyti, tiek ištuštėti (kitaip nėra prasmės
+	// jo turėti :)
+
+	// Print the header to both console and file
+	cout << " ---------------------------" << endl;
+	cout << " | Student Data            |" << endl;
+	cout << " ---------------------------" << endl;
+	cout << " |" << setw(maxNameWidth) << "Name     " << " |"
+		<< setw(maxYearWidth) << "Year" << "|"
+		<< setw(maxGradeWidth) << "    Grade" << "|" << '\n';
+	cout << " ---------------------------" << endl;
+
+	outputFile << " ---------------------------" << endl;
+	outputFile << " | Student Data            |" << endl;
+	outputFile << " ---------------------------" << endl;
+	outputFile << " |" << setw(maxNameWidth) << "Name     " << " |"
+		<< setw(maxYearWidth) << "Year" << "|"
+		<< setw(maxGradeWidth) << "    Grade" << "|" << '\n';
+	outputFile << " ---------------------------" << endl;
+
+	// Print the student data with adjusted widths to console and file
+	for (int i = 0; i < students.size(); ++i) {
+		const auto& student = students[i];
+		// Print to console
+		cout << " |" << setw(maxNameWidth) << student.name << "  |"
+			<< setw(3) << student.year << " |"
+			<< setw(maxGradeWidth) << student.grade << " |" << '\n';
+
+		// Print to file
+		outputFile << " |" << setw(maxNameWidth) << student.name << "  |"
+			<< setw(3) << student.year << " |"
+			<< setw(maxGradeWidth) << student.grade << " |" << '\n';
+	}
+
+	// Close the file
+	outputFile << " ---------------------------" << endl;
+	outputFile.close();
+
+	// Close the console output
+	cout << " ---------------------------" << endl;
+}
+
 int main() {
 	ifstream inputFile("duomenys.json");
 	string jsonData((istreambuf_iterator<char>(inputFile)), istreambuf_iterator<char>());
