@@ -18,6 +18,16 @@ struct Car {
 	double performanceScore;
 };
 
+// Function to calculate the performance score
+double calculatePerformanceScore(const Car& car) {
+	return car.power / car.consumption;
+}
+
+// Function to check if a car meets the filter criteria
+bool meetsFilterCriteria(const Car& car, double filterThreshold) {
+	return car.performanceScore > filterThreshold;
+}
+
 // DataMonitor class for managing student data
 class DataMonitor {
 private:
