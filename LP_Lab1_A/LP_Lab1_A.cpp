@@ -130,40 +130,84 @@ ResultMonitor resultMonitor;
 // Define a mutex for console and file output
 mutex outputMutex;
 
-// Function to process student data
-void processStudentData(int threadCount) {
+// Function to process car data
+void processCarData(int threadCount, int maxMakeWidth, int maxConsumptionWidth, int maxPowerWidth, const array<Car, 16>& cars, string threadType, double filterThreshold) {
+	string dashHeader = " ----------------------------------------------------------------------------";
+	string carHeader = " | Car Data                                                                 |";
+
 	while (dataMonitor.isRunning || dataMonitor.getCount() > 0) {
-		Student student = dataMonitor.remove();
-		if (student.grade == 404) {
+		Car car = dataMonitor.remove();
+		if (car.power == -1) {
 			break;
 		}
 
-		// Calculate SHA-1 hash for student data
+		// Calculate SHA-1 hash for car data
 		SHA1 sha1;
-		sha1.update(student.name);
-		sha1.update(std::to_string(student.year));
-		sha1.update(std::to_string(student.grade));
+		sha1.update(car.make);
+		sha1.update(std::to_string(car.consumption));
+		sha1.update(std::to_string(car.power));
 		std::string hashCode = sha1.final();
-		student.hashCode = hashCode;
+		car.hashCode = hashCode;
 
-		ostringstream os;
-		os << student.name << "| " << student.year << "| " << student.grade << "| " << hashCode;
-		string resultOutput = os.str() + "\n";
+		// Calculate the performance score
+		car.performanceScore = calculatePerformanceScore(car);
 
-		// Output what each thread is doing to both console and file
-		cout << "Thread " << threadCount << " - Processing: " << student.name << " | Year: " << student.year << " | Grade: " << student.grade << "\n";
-		cout << "Result: " << resultOutput << endl;
+		// Check if the car meets the filter criteria
+		if (car.power > 100) {
+			ostringstream os;
+			os << car.make << car.consumption << car.power;
+			string resultOutput = os.str() + "\n";
 
-		ofstream outputFile("result.txt", ios::app); // Open the file in append mode
-		if (outputFile) {
-			outputFile << "Thread " << threadCount << " - Processing: " << student.name << " | Year: " << student.year << " | Grade: " << student.grade << "\n";
-			outputFile << "Result: " << resultOutput << endl;
+			// Acquire the output mutex before printing to console and file
+			unique_lock<mutex> lock(outputMutex);
+
+			cout << dashHeader << endl;
+			cout << carHeader << endl;
+			cout << dashHeader << endl;
+			cout << " |" << setw(maxMakeWidth) << "Make      " << " |"
+				<< setw(maxConsumptionWidth) << " Consumption" << "|"
+				<< setw(maxPowerWidth) << "  Power" << "|"
+				<< setw(40) << "  Hash Code" << " |" << '\n';
+			cout << dashHeader << endl;
+			cout << " |" << setw(maxMakeWidth) << car.make << "  |"
+				<< setw(11) << car.consumption << " |"
+				<< setw(maxPowerWidth) << car.power << "    |"
+				<< setw(40) << car.hashCode << " |" << '\n';
+			cout << dashHeader << endl;
+
+			// Output what each thread is doing to both console and file
+			cout << threadType << " " << threadCount << " - Processing: " << car.make << " | Consumption: " << car.consumption << " | Power: " << car.power << " | Hash Code: " << car.hashCode << " | Performance Score: " << car.performanceScore << "\n";
+			cout << "Result: " << resultOutput << endl;
+
+			// Output to the result file
+			ofstream outputFile("result.txt", ios::app); // Open the file in append mode
+			if (outputFile) {
+				outputFile << threadType << " " << threadCount << " - Processing: " << car.make << " | Consumption: " << car.consumption << " | Power: " << car.power << " | Hash Code: " << car.hashCode << " | Performance Score: " << car.performanceScore << "\n";
+				outputFile << "Result: " << resultOutput << endl;
+				outputFile << dashHeader << endl;
+				outputFile << carHeader << endl;
+				outputFile << dashHeader << endl;
+				outputFile << " |" << setw(maxMakeWidth) << "Make      " << " |"
+					<< setw(maxConsumptionWidth) << "Consumption " << "|"
+					<< setw(maxPowerWidth) << "  Power" << "|"
+					<< setw(40) << "  Hash Code" << " |" << '\n';
+				outputFile << dashHeader << endl;
+				outputFile << " |" << setw(maxMakeWidth) << car.make << "  |"
+					<< setw(11) << car.consumption << " |"
+					<< setw(maxPowerWidth) << car.power << "    |"
+					<< setw(40) << car.hashCode << " |" << '\n';
+				outputFile << dashHeader << endl;
+				outputFile << threadType << " " << threadCount << " - Processing: " << car.make << " | Consumption: " << car.consumption << " | Power: " << car.power << " | Performance Score: " << car.performanceScore << "\n";
+				outputFile << "Result: " << resultOutput << endl;
+			}
 			outputFile.close();
-		}
 
-		// 8: Patikrina, ar gautas rezultatas tinka pagal pasirinktą kriterijų. Jei tinka, jis įrašomas į rezultatų monitorių taip, kad po įrašymo monitorius liktų surikiuotas.
-		// add the result into the result monitor
-		resultMonitor.addSorted(student);
+			// Release the output mutex
+			lock.unlock();
+
+			// Add the result into the result monitor
+			resultMonitor.addSorted(car);
+		}
 	}
 }
 
