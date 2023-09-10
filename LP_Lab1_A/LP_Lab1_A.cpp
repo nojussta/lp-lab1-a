@@ -9,12 +9,13 @@
 using namespace std;
 using json = nlohmann::json;
 
-// Define the Student struct
-struct Student {
-	string name;
-	int year;
-	double grade;
+// Define the Car struct with additional fields
+struct Car {
+	string make;
+	double consumption;
+	int power;
 	string hashCode;
+	double performanceScore;
 };
 
 // DataMonitor class for managing student data
