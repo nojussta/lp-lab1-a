@@ -127,6 +127,9 @@ public:
 
 ResultMonitor resultMonitor;
 
+// Define a mutex for console and file output
+mutex outputMutex;
+
 // Function to process student data
 void processStudentData(int threadCount) {
 	while (dataMonitor.isRunning || dataMonitor.getCount() > 0) {
