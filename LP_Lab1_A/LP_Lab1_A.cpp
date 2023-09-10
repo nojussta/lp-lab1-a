@@ -1,10 +1,6 @@
-﻿#include <iostream>
-#include <iomanip>
-#include <fstream>
-#include <condition_variable>
+﻿#include <mutex>
 #include "json.hpp"
 #include "sha1.hpp"
-
 
 using namespace std;
 using json = nlohmann::json;
