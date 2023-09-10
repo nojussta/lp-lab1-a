@@ -28,10 +28,10 @@ bool meetsFilterCriteria(const Car& car, double filterThreshold) {
 	return car.performanceScore > filterThreshold;
 }
 
-// DataMonitor class for managing student data
+// Define the DataMonitor class for managing car data
 class DataMonitor {
 private:
-	array<Student, 19> dataBuffer; // Fixed-size array
+	array<Car, 16> dataBuffer; // Fixed-size array
 	int count = 0; // Keeps track of the number of elements in the buffer
 	condition_variable dataCondition;
 
@@ -40,46 +40,40 @@ public:
 	bool isRunning = true;
 	bool shouldReturnEmpty = false;
 
-	// 1: Nuskaito duomenų failą į lokalų masyvą, sąrašą ar kitą duomenų struktūrą;
 	// Notify waiting threads that data is available
 	void notify() {
 		dataCondition.notify_all();
 	}
 
-	// 3: Į duomenų monitorių, įrašo visus nuskaitytus duomenis po vieną. Jei monitorius
-	// yra pilnas, gija blokuojama, kol atsiras vietos.
-	// Add a student into the data buffer
-	void add(Student newStudent) {
+	// Add a car into the data buffer
+	void add(Car newCar) {
 		unique_lock<mutex> lock(monitorMutex);
-		while (count >= 19) {
+		while (count >= 16) {
 			dataCondition.wait(lock);
 		}
-		dataBuffer[count] = newStudent;
+		dataBuffer[count] = newCar;
 		count++;
 		dataCondition.notify_all();
 	}
 
-	// 6: Darbininkės gijos atlieka tokius veiksmus:
-	// Iš duomenų monitoriaus paima elementą. Jei duomenų monitorius yra tuščias, gija
-	// laukia, kol jame atsiras duomenų.
-	// Remove a student from the data buffer
-	Student remove() {
-		Student student;
+	// Remove a car from the data buffer
+	Car remove() {
+		Car car;
 		unique_lock<mutex> lock(monitorMutex);
 		while (count == 0) {
 			if (shouldReturnEmpty) {
-				student.grade = 404;
-				return student;
+				car.power = -1;
+				return car;
 			}
 			dataCondition.wait(lock);
 		}
 		count--;
-		student = dataBuffer[count];
+		car = dataBuffer[count];
 		dataCondition.notify_all();
-		return student;
+		return car;
 	}
 
-	// Get the current count of students in the data buffer
+	// Get the current count of cars in the data buffer
 	int getCount() {
 		return count;
 	}
