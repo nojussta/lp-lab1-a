@@ -1,99 +1,84 @@
 ﻿{
-  "students": [
+  "cars": [
     {
-      "name": "Antanas",
-      "year": 1,
-      "grade": 6.95
+      "make": "Volvo",
+      "consumption": 5.2,
+      "power": 100
     },
     {
-      "name": "Kazys",
-      "year": 2,
-      "grade": 8.65
+      "make": "Opel",
+      "consumption": 4.6,
+      "power": 75
     },
     {
-      "name": "Petras",
-      "year": 2,
-      "grade": 7.01
+      "make": "Toyota",
+      "consumption": 5.0,
+      "power": 90
     },
     {
-      "name": "Sonata",
-      "year": 3,
-      "grade": 9.13
+      "make": "Ford",
+      "consumption": 6.0,
+      "power": 120
     },
     {
-      "name": "Jonas",
-      "year": 1,
-      "grade": 6.95
+      "make": "Honda",
+      "consumption": 4.8,
+      "power": 85
     },
     {
-      "name": "Martynas",
-      "year": 3,
-      "grade": 9.13
+      "make": "BMW",
+      "consumption": 6.5,
+      "power": 150
     },
     {
-      "name": "Arturas",
-      "year": 2,
-      "grade": 7.01
+      "make": "Mercedes",
+      "consumption": 6.2,
+      "power": 130
     },
     {
-      "name": "Vacys",
-      "year": 2,
-      "grade": 8.65
+      "make": "Audi",
+      "consumption": 5.8,
+      "power": 110
     },
     {
-      "name": "Robertas",
-      "year": 3,
-      "grade": 6.43
+      "make": "Nissan",
+      "consumption": 5.3,
+      "power": 95
     },
     {
-      "name": "Mykolas",
-      "year": 1,
-      "grade": 6.95
+      "make": "Hyundai",
+      "consumption": 4.9,
+      "power": 88
     },
     {
-      "name": "Aldona",
-      "year": 3,
-      "grade": 9.13
+      "make": "Kia",
+      "consumption": 5.1,
+      "power": 92
     },
     {
-      "name": "Asta",
-      "year": 2,
-      "grade": 7.01
+      "make": "Chevrolet",
+      "consumption": 6.3,
+      "power": 105
     },
     {
-      "name": "Viktoras",
-      "year": 2,
-      "grade": 8.65
+      "make": "Mazda",
+      "consumption": 5.4,
+      "power": 98
     },
     {
-      "name": "Arturas",
-      "year": 5,
-      "grade": 8.32
+      "make": "Subaru",
+      "consumption": 5.7,
+      "power": 103
     },
     {
-      "name": "Vytas",
-      "year": 3,
-      "grade": 7.85
+      "make": "Lexus",
+      "consumption": 6.8,
+      "power": 155
     },
     {
-      "name": "Jonas",
-      "year": 1,
-      "grade": 6.95
-    },
-    {
-      "name": "Zigmas",
-      "year": 3,
-      "grade": 9.13
-    },
-    {
-      "name": "Arturas",
-      "year": 2,
-      "grade": 7.01
-    },
-    {
-      "name": "Simas",
-      "year": 3,
-      "grade": 6.43
+      "make": "Jeep",
+      "consumption": 7.0,
+      "power": 180
     }
   ]
 }
