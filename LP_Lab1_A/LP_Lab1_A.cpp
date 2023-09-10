@@ -84,7 +84,7 @@ DataMonitor dataMonitor;
 // ResultMonitor class for managing processed results
 class ResultMonitor {
 private:
-	array<Student, 19> resultBuffer; // Fixed-size array
+	array<Car, 16> resultBuffer; // Fixed-size array
 	int count = 0; // Keeps track of the number of elements in the buffer
 	condition_variable resultCondition;
 
@@ -92,38 +92,34 @@ public:
 	mutex monitorMutex;
 	bool isRunning = true;
 
-	// 5: Iš rezultatų monitoriaus, kuriame saugomi gauti atfiltruoti rezultatai, rezultatus
-	// išveda į tekstinį failą lentele.
 	// Get the result buffer
-	array<Student, 19> getResultBuffer() const {
+	array<Car, 16> getResultBuffer() const {
 		return resultBuffer;
 	}
 
-	// 8: Patikrina, ar gautas rezultatas tinka pagal pasirinktą kriterijų. Jei tinka, jis įrašomas į rezultatų monitorių taip, kad po įrašymo monitorius liktų surikiuotas.
-	// add a student into the result buffer in a sorted manner
-	void addSorted(Student newStudent) {
+	// Add a car into the result buffer in a sorted manner
+	void addSorted(Car newCar) {
 		unique_lock<mutex> lock(monitorMutex);
 
-		if (newStudent.grade < 7) {
+		if (newCar.power < 100) {
 			return;
 		}
 
-		auto it = lower_bound(resultBuffer.begin(), resultBuffer.begin() + count, newStudent,
-			[](const Student& a, const Student& b) {
-				return a.name < b.name;
+		auto it = lower_bound(resultBuffer.begin(), resultBuffer.begin() + count, newCar,
+			[](const Car& a, const Car& b) {
+				return a.make < b.make;
 			});
 
 		for (int i = count; i > (it - resultBuffer.begin()); --i) {
 			resultBuffer[i] = resultBuffer[i - 1];
 		}
 
-		resultBuffer[it - resultBuffer.begin()] = newStudent;
+		resultBuffer[it - resultBuffer.begin()] = newCar;
 		count++;
 		resultCondition.notify_all();
 	}
 
-	// 8: Patikrina, ar gautas rezultatas tinka pagal pasirinktą kriterijų. Jei tinka, jis įrašomas į rezultatų monitorių taip, kad po įrašymo monitorius liktų surikiuotas.
-	// Get the current count of students in the result buffer
+	// Get the current count of cars in the result buffer
 	int getCount() {
 		return count;
 	}
