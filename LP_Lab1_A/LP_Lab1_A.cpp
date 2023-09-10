@@ -260,48 +260,49 @@ void printHeaderAndData(const array<Car, 16>& cars, int maxMakeWidth, int maxCon
 
 int main() {
 	const int threadCount = 4;
+	double filterThreshold = 50.0;
+
 	ifstream inputFile("duomenys.json");
 	string jsonData((istreambuf_iterator<char>(inputFile)), istreambuf_iterator<char>());
-	json jsonStudents = json::parse(jsonData);
+	json jsonCars = json::parse(jsonData);
 
-	array<Student, 19> mainStudents; // Use a fixed-size array
+	array<Car, 16> mainCars;
 
-	// 1: Nuskaito duomenų failą į lokalų masyvą, sąrašą ar kitą duomenų struktūrą;
-	// Parse student data from JSON
+	// Parse car data from JSON
 	int i = 0;
-	for (const auto& studentData : jsonStudents["students"]) {
-		Student student;
-		student.name = studentData["name"];
-		student.year = studentData["year"];
-		student.grade = studentData["grade"];
-		mainStudents[i++] = student;
+	for (const auto& carData : jsonCars["cars"]) {
+		Car car;
+		car.make = carData["make"];
+		car.consumption = carData["consumption"];
+		car.power = carData["power"];
+		mainCars[i++] = car;
 	}
 
-	int maxNameWidth = 0;
-	int maxYearWidth = 0;
-	int maxGradeWidth = 0;
+	int maxMakeWidth = 0;
+	int maxConsumptionWidth = 0;
+	int maxPowerWidth = 0;
 
-	for (const auto& student : mainStudents) {
-		maxNameWidth = max(maxNameWidth, int(student.name.length()));
-		maxYearWidth = max(maxYearWidth, int(to_string(student.year).length()));
-		maxGradeWidth = max(maxGradeWidth, int(to_string(student.grade).length()));
+	for (const auto& car : mainCars) {
+		maxMakeWidth = max(maxMakeWidth, int(car.make.length()));
+		maxConsumptionWidth = max(maxConsumptionWidth, int(to_string(car.consumption).length()));
+		maxPowerWidth = max(maxPowerWidth, int(to_string(car.power).length()));
 	}
 
-	// Call the printHeaderAndData function to print header and student data
-	printHeaderAndData(mainStudents, maxNameWidth, maxYearWidth, maxGradeWidth);
+	// Call the printHeaderAndData function to print header and car data
+	printHeaderAndData(mainCars, maxMakeWidth, maxConsumptionWidth, maxPowerWidth);
+
+	thread mainThread = thread(processCarData, 0, maxMakeWidth, maxConsumptionWidth, maxPowerWidth, mainCars, "MainThread", filterThreshold);
 
 	thread threads[threadCount];
 	for (int i = 0; i < threadCount; ++i) {
-		threads[i] = thread(processStudentData, i + 1);
+		threads[i] = thread(processCarData, i + 1, maxMakeWidth, maxConsumptionWidth, maxPowerWidth, mainCars, "WorkerThread", filterThreshold);
 	}
 
-	// 2: Paleidžia pasirinktą kiekį darbininkių gijų 2 ≤ x ≤ n/4 (n — duomenų kiekis faile).
-	// add students into the data monitor
-	for (int i = mainStudents.size() - 1; i >= 0; --i) {
-		dataMonitor.add(mainStudents[i]);
+	// Add cars into the data monitor
+	for (int i = mainCars.size() - 1; i >= 0; --i) {
+		dataMonitor.add(mainCars[i]);
 	}
 
-	// 4: Palaukia, kol visos darbininkės gijos baigs darbą.
 	// Signal threads to stop and wait for them to finish
 	dataMonitor.isRunning = false;
 	dataMonitor.shouldReturnEmpty = true;
@@ -309,6 +310,9 @@ int main() {
 	for (auto& thread : threads) {
 		thread.join();
 	}
+
+	// Wait for the main thread to finish
+	mainThread.join();
 
 	return 0;
 }
