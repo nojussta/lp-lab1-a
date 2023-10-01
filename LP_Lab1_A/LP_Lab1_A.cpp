@@ -44,28 +44,40 @@ public:
 	// Add a car into the data buffer
 	void add(Car newCar) {
 		unique_lock<mutex> lock(monitorMutex);
-		while (count >= 16) {
-			dataCondition.wait(lock);
-		}
-		dataBuffer[count] = newCar;
-		count++;
+		dataCondition.wait(lock, [this] { return count < 16; });
+		dataBuffer[count++] = newCar;
 		dataCondition.notify_all();
+
+		// Output when an object is added to DataMonitor
+		cout << "Added car to DataMonitor. Count: " << count << endl;
+
+		// Output when the DataMonitor is full
+		if (count == 16) {
+			cout << "DataMonitor is full. Waiting for space." << endl;
+		}
 	}
 
 	// Remove a car from the data buffer
 	Car remove() {
 		Car car;
 		unique_lock<mutex> lock(monitorMutex);
-		while (count == 0) {
-			if (shouldReturnEmpty) {
-				car.power = -1;
-				return car;
-			}
-			dataCondition.wait(lock);
+		dataCondition.wait(lock, [this] { return count > 0 || shouldReturnEmpty; });
+
+		if (shouldReturnEmpty) {
+			car.power = -1;
 		}
-		count--;
-		car = dataBuffer[count];
+		else {
+			car = dataBuffer[--count];
+			cout << "Removed car from DataMonitor. Count: " << count << endl;
+		}
+
 		dataCondition.notify_all();
+
+		// Output when the DataMonitor is empty
+		if (count == 0) {
+			cout << "DataMonitor is empty. Waiting for data." << endl;
+		}
+
 		return car;
 	}
 
@@ -309,6 +321,9 @@ int main() {
 
 	// Wait for the main thread to finish
 	mainThread.join();
+
+	// Print a message indicating that the DataMonitor is completely empty
+	cout << "DataMonitor is completely empty." << endl;
 
 	return 0;
 }
