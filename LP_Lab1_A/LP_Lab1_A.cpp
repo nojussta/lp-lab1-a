@@ -49,7 +49,9 @@ public:
 		dataCondition.notify_all();
 
 		// Output when an object is added to DataMonitor
+		cout << endl;
 		cout << "Added car to DataMonitor. Count: " << count << endl;
+		cout << endl;
 
 		// Output when the DataMonitor is full
 		if (count == 16) {
@@ -69,6 +71,7 @@ public:
 		else {
 			car = dataBuffer[--count];
 			cout << "Removed car from DataMonitor. Count: " << count << endl;
+			//cout << endl;
 		}
 
 		dataCondition.notify_all();
