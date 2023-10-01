@@ -98,9 +98,9 @@ private:
 	array<Car, 16> resultBuffer; // Fixed-size array
 	int count = 0; // Keeps track of the number of elements in the buffer
 	condition_variable resultCondition;
+	mutex monitorMutex;
 
 public:
-	mutex monitorMutex;
 	bool isRunning = true;
 
 	// Get the result buffer
@@ -134,7 +134,21 @@ public:
 	int getCount() {
 		return count;
 	}
+
+	// Notify waiting threads that the result monitor is no longer accepting new data
+	void notifyCompletion() {
+		unique_lock<mutex> lock(monitorMutex);
+		isRunning = false;
+		resultCondition.notify_all();
+	}
+
+	// Wait for the result buffer to be non-empty or completion signal
+	void wait() {
+		unique_lock<mutex> lock(monitorMutex);
+		resultCondition.wait(lock, [this] { return count > 0 || !isRunning; });
+	}
 };
+
 
 ResultMonitor resultMonitor;
 
@@ -222,6 +236,57 @@ void processCarData(int threadCount, int maxMakeWidth, int maxConsumptionWidth, 
 	}
 }
 
+void outputResults(int threadCount, int maxMakeWidth, int maxConsumptionWidth, int maxPowerWidth, Car car, string threadType, double filterThreshold) {
+	//string dashHeader = " ----------------------------------------------------------------------------";
+	//string carHeader = " | Car Data                                                                 |";
+
+	//ostringstream os;
+	//os << car.make << car.consumption << car.power << car.hashCode << car.performanceScore;
+	//string resultOutput = os.str() + "\n";
+
+
+	//cout << dashHeader << endl;
+	//cout << carHeader << endl;
+	//cout << dashHeader << endl;
+	//cout << " |" << setw(maxMakeWidth) << "Make      " << " |"
+	//	<< setw(maxConsumptionWidth) << " Consumption" << "|"
+	//	<< setw(maxPowerWidth) << "  Power" << "|"
+	//	<< setw(40) << "  Hash Code" << " |" << '\n';
+	//cout << dashHeader << endl;
+	//cout << " |" << setw(maxMakeWidth) << car.make << "  |"
+	//	<< setw(11) << car.consumption << " |"
+	//	<< setw(maxPowerWidth) << car.power << "    |"
+	//	<< setw(40) << car.hashCode << " |" << '\n';
+	//cout << dashHeader << endl;
+
+	//// Output what each thread is doing to both console and file
+	//cout << threadType << " " << threadCount << " - Processing: " << car.make << " | Consumption: " << car.consumption << " | Power: " << car.power << " | Hash Code: " << car.hashCode << " | Performance Score: " << car.performanceScore << "\n";
+	//cout << "Result: " << resultOutput << endl;
+
+	//// Output to the result file
+	//ofstream outputFile("result.txt", ios::app); // Open the file in append mode
+	//if (outputFile) {
+	//	outputFile << threadType << " " << threadCount << " - Processing: " << car.make << " | Consumption: " << car.consumption << " | Power: " << car.power << " | Hash Code: " << car.hashCode << " | Performance Score: " << car.performanceScore << "\n";
+	//	outputFile << "Result: " << resultOutput << endl;
+	//	outputFile << dashHeader << endl;
+	//	outputFile << carHeader << endl;
+	//	outputFile << dashHeader << endl;
+	//	outputFile << " |" << setw(maxMakeWidth) << "Make      " << " |"
+	//		<< setw(maxConsumptionWidth) << "Consumption " << "|"
+	//		<< setw(maxPowerWidth) << "  Power" << "|"
+	//		<< setw(40) << "  Hash Code" << " |" << '\n';
+	//	outputFile << dashHeader << endl;
+	//	outputFile << " |" << setw(maxMakeWidth) << car.make << "  |"
+	//		<< setw(11) << car.consumption << " |"
+	//		<< setw(maxPowerWidth) << car.power << "    |"
+	//		<< setw(40) << car.hashCode << " |" << '\n';
+	//	outputFile << dashHeader << endl;
+	//	outputFile << threadType << " " << threadCount << " - Processing: " << car.make << " | Consumption: " << car.consumption << " | Power: " << car.power << " | Performance Score: " << car.performanceScore << "\n";
+	//	outputFile << "Result: " << resultOutput << endl;
+	//}
+	//outputFile.close();
+}
+
 // Function to print header and car data to console and file
 void printHeaderAndData(const array<Car, 16>& cars, int maxMakeWidth, int maxConsumptionWidth, int maxPowerWidth) {
 	// Print the header to both console and file
@@ -270,6 +335,7 @@ void printHeaderAndData(const array<Car, 16>& cars, int maxMakeWidth, int maxCon
 }
 
 int main() {
+	ResultMonitor resultMonitor;
 	const int threadCount = 4;
 	double filterThreshold = 50.0;
 
@@ -327,6 +393,12 @@ int main() {
 
 	// Print a message indicating that the DataMonitor is completely empty
 	cout << "DataMonitor is completely empty." << endl;
+
+	array<Car, 16> sortedCars;
+	sortedCars = resultMonitor.getResultBuffer();
+	for (auto& car : sortedCars) {
+		outputResults(3, maxMakeWidth, maxConsumptionWidth, maxPowerWidth, car, "MainThread", filterThreshold);
+	}
 
 	return 0;
 }
