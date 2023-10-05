@@ -33,12 +33,12 @@ private:
 
 public:
 	mutex monitorMutex;
-	bool isRunning = true;
+	bool isRunning = false;
 	bool shouldReturnEmpty = false;
 
-	// Notify waiting threads that data is available
-	void notify() {
-		dataCondition.notify_all();
+	void isFinished()
+	{
+		isRunning = true;
 	}
 
 	// Add a car into the data buffer
@@ -49,9 +49,9 @@ public:
 		dataCondition.notify_all();
 
 		// Output when an object is added to DataMonitor
-		cout << endl;
+		//cout << endl;
 		cout << "Added car to DataMonitor. Count: " << count << endl;
-		cout << endl;
+		//cout << endl;
 
 		// Output when the DataMonitor is full
 		if (count == 16) {
@@ -103,31 +103,28 @@ private:
 public:
 	bool isRunning = true;
 
-	// Get the result buffer
-	array<Car, 16> getResultBuffer() const {
-		return resultBuffer;
-	}
-
-	// Add a car into the result buffer in a sorted manner
 	void addSorted(Car newCar) {
 		unique_lock<mutex> lock(monitorMutex);
 
-		if (newCar.power < 100) {
-			return;
-		}
-
-		auto it = lower_bound(resultBuffer.begin(), resultBuffer.begin() + count, newCar,
-			[](const Car& a, const Car& b) {
-				return a.make < b.make;
-			});
-
-		for (int i = count; i > (it - resultBuffer.begin()); --i) {
-			resultBuffer[i] = resultBuffer[i - 1];
-		}
-
-		resultBuffer[it - resultBuffer.begin()] = newCar;
+		resultBuffer[count] = newCar;
 		count++;
+
+		// Bubble Sort
+		for (int i = 0; i < count - 1; ++i) {
+			for (int j = 0; j < count - i - 1; ++j) {
+				if (resultBuffer[j].make < resultBuffer[j + 1].make) {
+					// Swap if the cars are in the wrong order
+					swap(resultBuffer[j], resultBuffer[j + 1]);
+				}
+			}
+		}
+
 		resultCondition.notify_all();
+	}
+
+	// Get the result buffer
+	array<Car, 16> getFilteredCars() const {
+		return resultBuffer;
 	}
 
 	// Get the current count of cars in the result buffer
@@ -135,156 +132,88 @@ public:
 		return count;
 	}
 
-	// Notify waiting threads that the result monitor is no longer accepting new data
-	void notifyCompletion() {
+	void printResult(const Car& car, int maxMakeWidth, int maxConsumptionWidth, int maxPowerWidth) {
 		unique_lock<mutex> lock(monitorMutex);
-		isRunning = false;
-		resultCondition.notify_all();
-	}
 
-	// Wait for the result buffer to be non-empty or completion signal
-	void wait() {
-		unique_lock<mutex> lock(monitorMutex);
-		resultCondition.wait(lock, [this] { return count > 0 || !isRunning; });
+		string dashHeader = " ----------------------------------------------------------------------------";
+		string carHeader = " | Car Data                                                                 |";
+
+		cout << dashHeader << endl;
+		cout << carHeader << endl;
+		cout << dashHeader << endl;
+		cout << " |" << setw(maxMakeWidth) << "Make      " << " |"
+			<< setw(maxConsumptionWidth) << " Consumption" << "|"
+			<< setw(maxPowerWidth) << "  Power" << "|"
+			<< setw(40) << "  Hash Code" << " |" << '\n';
+		cout << dashHeader << endl;
+		cout << " |" << setw(maxMakeWidth) << car.make << "  |"
+			<< setw(11) << car.consumption << " |"
+			<< setw(maxPowerWidth) << car.power << "    |"
+			<< setw(40) << car.hashCode << " |" << '\n';
+		cout << dashHeader << endl;
+
+		// Output what each thread is doing to both console and file
+		//cout << "Processing: " << car.make << " | Consumption: " << car.consumption << " | Power: " << car.power << " | Hash Code: " << car.hashCode << " | Performance Score: " << car.performanceScore << "\n";
+		cout << "Performance Score: " << car.performanceScore << "\n";
+
+		// Output to the result file
+		ofstream outputFile("result.txt", ios::app); // Open the file in append mode
+		if (outputFile) {
+			outputFile << "Processing: " << car.make << " | Consumption: " << car.consumption << " | Power: " << car.power << " | Hash Code: " << car.hashCode << " | Performance Score: " << car.performanceScore << "\n";
+			outputFile << dashHeader << endl;
+			outputFile << carHeader << endl;
+			outputFile << dashHeader << endl;
+			outputFile << " |" << setw(maxMakeWidth) << "Make      " << " |"
+				<< setw(maxConsumptionWidth) << "Consumption " << "|"
+				<< setw(maxPowerWidth) << "  Power" << "|"
+				<< setw(40) << "  Hash Code" << " |" << '\n';
+			outputFile << dashHeader << endl;
+			outputFile << " |" << setw(maxMakeWidth) << car.make << "  |"
+				<< setw(11) << car.consumption << " |"
+				<< setw(maxPowerWidth) << car.power << "    |"
+				<< setw(40) << car.hashCode << " |" << '\n';
+			outputFile << dashHeader << endl;
+			//outputFile << "Processing: " << car.make << " | Consumption: " << car.consumption << " | Power: " << car.power << " | Performance Score: " << car.performanceScore << "\n";
+			outputFile << "Performance Score: " << car.performanceScore << "\n";
+		}
+		outputFile.close();
 	}
 };
 
-
 ResultMonitor resultMonitor;
 
-// Define a mutex for console and file output
-mutex outputMutex;
-
-// Function to process car data
 void processCarData(int threadCount, int maxMakeWidth, int maxConsumptionWidth, int maxPowerWidth, const array<Car, 16>& cars, string threadType, double filterThreshold) {
 	string dashHeader = " ----------------------------------------------------------------------------";
 	string carHeader = " | Car Data                                                                 |";
 
-	while (dataMonitor.isRunning || dataMonitor.getCount() > 0) {
-		Car car = dataMonitor.remove();
-		if (car.power == -1) {
-			break;
-		}
-
-		// Calculate SHA-1 hash for car data
-		SHA1 sha1;
-		sha1.update(car.make);
-		sha1.update(std::to_string(car.consumption));
-		sha1.update(std::to_string(car.power));
-		std::string hashCode = sha1.final();
-		car.hashCode = hashCode;
-
-		// Calculate the performance score
-		car.performanceScore = calculatePerformanceScore(car);
-
-		// Check if the car meets the filter criteria
-		if (car.power > 100) {
-			ostringstream os;
-			os << car.make << car.consumption << car.power;
-			string resultOutput = os.str() + "\n";
-
-			// Acquire the output mutex before printing to console and file
-			unique_lock<mutex> lock(outputMutex);
-
-			cout << dashHeader << endl;
-			cout << carHeader << endl;
-			cout << dashHeader << endl;
-			cout << " |" << setw(maxMakeWidth) << "Make      " << " |"
-				<< setw(maxConsumptionWidth) << " Consumption" << "|"
-				<< setw(maxPowerWidth) << "  Power" << "|"
-				<< setw(40) << "  Hash Code" << " |" << '\n';
-			cout << dashHeader << endl;
-			cout << " |" << setw(maxMakeWidth) << car.make << "  |"
-				<< setw(11) << car.consumption << " |"
-				<< setw(maxPowerWidth) << car.power << "    |"
-				<< setw(40) << car.hashCode << " |" << '\n';
-			cout << dashHeader << endl;
-
-			// Output what each thread is doing to both console and file
-			cout << threadType << " " << threadCount << " - Processing: " << car.make << " | Consumption: " << car.consumption << " | Power: " << car.power << " | Hash Code: " << car.hashCode << " | Performance Score: " << car.performanceScore << "\n";
-			cout << "Result: " << resultOutput << endl;
-
-			// Output to the result file
-			ofstream outputFile("result.txt", ios::app); // Open the file in append mode
-			if (outputFile) {
-				outputFile << threadType << " " << threadCount << " - Processing: " << car.make << " | Consumption: " << car.consumption << " | Power: " << car.power << " | Hash Code: " << car.hashCode << " | Performance Score: " << car.performanceScore << "\n";
-				outputFile << "Result: " << resultOutput << endl;
-				outputFile << dashHeader << endl;
-				outputFile << carHeader << endl;
-				outputFile << dashHeader << endl;
-				outputFile << " |" << setw(maxMakeWidth) << "Make      " << " |"
-					<< setw(maxConsumptionWidth) << "Consumption " << "|"
-					<< setw(maxPowerWidth) << "  Power" << "|"
-					<< setw(40) << "  Hash Code" << " |" << '\n';
-				outputFile << dashHeader << endl;
-				outputFile << " |" << setw(maxMakeWidth) << car.make << "  |"
-					<< setw(11) << car.consumption << " |"
-					<< setw(maxPowerWidth) << car.power << "    |"
-					<< setw(40) << car.hashCode << " |" << '\n';
-				outputFile << dashHeader << endl;
-				outputFile << threadType << " " << threadCount << " - Processing: " << car.make << " | Consumption: " << car.consumption << " | Power: " << car.power << " | Performance Score: " << car.performanceScore << "\n";
-				outputFile << "Result: " << resultOutput << endl;
+	while (true) {
+		if (dataMonitor.isRunning || dataMonitor.getCount() > 0)
+		{
+			Car car = dataMonitor.remove();
+			if (car.power == -1) {
+				break;
 			}
-			outputFile.close();
 
-			// Release the output mutex
-			lock.unlock();
+			// Calculate SHA-1 hash for car data
+			SHA1 sha1;
+			sha1.update(car.make);
+			sha1.update(std::to_string(car.consumption));
+			sha1.update(std::to_string(car.power));
+			std::string hashCode = sha1.final();
+			car.hashCode = hashCode;
 
-			// Add the result into the result monitor
-			resultMonitor.addSorted(car);
+			// Calculate the performance score
+			car.performanceScore = calculatePerformanceScore(car);
+
+			// Check if the car meets the filter criteria
+			if (car.power > 100) {
+				// Add the result into the result monitor
+				resultMonitor.addSorted(car);
+			}
 		}
+		else
+			break;
 	}
-}
-
-void outputResults(int threadCount, int maxMakeWidth, int maxConsumptionWidth, int maxPowerWidth, Car car, string threadType, double filterThreshold) {
-	//string dashHeader = " ----------------------------------------------------------------------------";
-	//string carHeader = " | Car Data                                                                 |";
-
-	//ostringstream os;
-	//os << car.make << car.consumption << car.power << car.hashCode << car.performanceScore;
-	//string resultOutput = os.str() + "\n";
-
-
-	//cout << dashHeader << endl;
-	//cout << carHeader << endl;
-	//cout << dashHeader << endl;
-	//cout << " |" << setw(maxMakeWidth) << "Make      " << " |"
-	//	<< setw(maxConsumptionWidth) << " Consumption" << "|"
-	//	<< setw(maxPowerWidth) << "  Power" << "|"
-	//	<< setw(40) << "  Hash Code" << " |" << '\n';
-	//cout << dashHeader << endl;
-	//cout << " |" << setw(maxMakeWidth) << car.make << "  |"
-	//	<< setw(11) << car.consumption << " |"
-	//	<< setw(maxPowerWidth) << car.power << "    |"
-	//	<< setw(40) << car.hashCode << " |" << '\n';
-	//cout << dashHeader << endl;
-
-	//// Output what each thread is doing to both console and file
-	//cout << threadType << " " << threadCount << " - Processing: " << car.make << " | Consumption: " << car.consumption << " | Power: " << car.power << " | Hash Code: " << car.hashCode << " | Performance Score: " << car.performanceScore << "\n";
-	//cout << "Result: " << resultOutput << endl;
-
-	//// Output to the result file
-	//ofstream outputFile("result.txt", ios::app); // Open the file in append mode
-	//if (outputFile) {
-	//	outputFile << threadType << " " << threadCount << " - Processing: " << car.make << " | Consumption: " << car.consumption << " | Power: " << car.power << " | Hash Code: " << car.hashCode << " | Performance Score: " << car.performanceScore << "\n";
-	//	outputFile << "Result: " << resultOutput << endl;
-	//	outputFile << dashHeader << endl;
-	//	outputFile << carHeader << endl;
-	//	outputFile << dashHeader << endl;
-	//	outputFile << " |" << setw(maxMakeWidth) << "Make      " << " |"
-	//		<< setw(maxConsumptionWidth) << "Consumption " << "|"
-	//		<< setw(maxPowerWidth) << "  Power" << "|"
-	//		<< setw(40) << "  Hash Code" << " |" << '\n';
-	//	outputFile << dashHeader << endl;
-	//	outputFile << " |" << setw(maxMakeWidth) << car.make << "  |"
-	//		<< setw(11) << car.consumption << " |"
-	//		<< setw(maxPowerWidth) << car.power << "    |"
-	//		<< setw(40) << car.hashCode << " |" << '\n';
-	//	outputFile << dashHeader << endl;
-	//	outputFile << threadType << " " << threadCount << " - Processing: " << car.make << " | Consumption: " << car.consumption << " | Power: " << car.power << " | Performance Score: " << car.performanceScore << "\n";
-	//	outputFile << "Result: " << resultOutput << endl;
-	//}
-	//outputFile.close();
 }
 
 // Function to print header and car data to console and file
@@ -335,7 +264,7 @@ void printHeaderAndData(const array<Car, 16>& cars, int maxMakeWidth, int maxCon
 }
 
 int main() {
-	ResultMonitor resultMonitor;
+	//ResultMonitor resultMonitor;
 	const int threadCount = 4;
 	double filterThreshold = 50.0;
 
@@ -368,37 +297,50 @@ int main() {
 	// Call the printHeaderAndData function to print header and car data
 	printHeaderAndData(mainCars, maxMakeWidth, maxConsumptionWidth, maxPowerWidth);
 
-	thread mainThread = thread(processCarData, 0, maxMakeWidth, maxConsumptionWidth, maxPowerWidth, mainCars, "MainThread", filterThreshold);
+	//thread mainThread = thread(processCarData, 0, maxMakeWidth, maxConsumptionWidth, maxPowerWidth, mainCars, "MainThread", filterThreshold);
 
-	thread threads[threadCount];
-	for (int i = 0; i < threadCount; ++i) {
-		threads[i] = thread(processCarData, i + 1, maxMakeWidth, maxConsumptionWidth, maxPowerWidth, mainCars, "WorkerThread", filterThreshold);
+	//thread threads[threadCount];
+	//for (int i = 0; i < threadCount; ++i) {
+	//	threads[i] = thread(processCarData, i + 1, maxMakeWidth, maxConsumptionWidth, maxPowerWidth, mainCars, "WorkerThread", filterThreshold);
+	//}
+
+	//// Add cars into the data monitor
+	//for (int i = mainCars.size() - 1; i >= 0; --i) {
+	//	dataMonitor.add(mainCars[i]);
+	//}
+
+	vector<thread> threads;
+	for (int i = 0; i < threadCount; i++)
+	{
+		threads.emplace_back([&] {processCarData(i + 1, maxMakeWidth, maxConsumptionWidth, maxPowerWidth, mainCars, "WorkerThread", filterThreshold); });
 	}
 
-	// Add cars into the data monitor
-	for (int i = mainCars.size() - 1; i >= 0; --i) {
+	for (int i = 0; i < mainCars.size(); i++)
+	{
 		dataMonitor.add(mainCars[i]);
 	}
 
 	// Signal threads to stop and wait for them to finish
-	dataMonitor.isRunning = false;
+	dataMonitor.isFinished();
 	dataMonitor.shouldReturnEmpty = true;
-	dataMonitor.notify();
-	for (auto& thread : threads) {
-		thread.join();
-	}
+	for_each(threads.begin(), threads.end(), mem_fn(&thread::join));
 
+	//this_thread::sleep_for(std::chrono::seconds(10));
 	// Wait for the main thread to finish
-	mainThread.join();
+	//for (auto& thread : threads) {
+	//	thread.join();
+	//}
 
 	// Print a message indicating that the DataMonitor is completely empty
 	cout << "DataMonitor is completely empty." << endl;
 
+	// Print the results directly from the result monitor
 	array<Car, 16> sortedCars;
-	sortedCars = resultMonitor.getResultBuffer();
-	for (auto& car : sortedCars) {
-		outputResults(3, maxMakeWidth, maxConsumptionWidth, maxPowerWidth, car, "MainThread", filterThreshold);
+	sortedCars = resultMonitor.getFilteredCars();
+	for (size_t i = 0; i < resultMonitor.getCount(); i++)
+	{
+		//outputResults(threadCount, maxMakeWidth, maxConsumptionWidth, maxPowerWidth, sortedCars[i], "", filterThreshold);
+		resultMonitor.printResult(sortedCars[i], maxMakeWidth, maxConsumptionWidth, maxPowerWidth);
 	}
-
 	return 0;
 }
