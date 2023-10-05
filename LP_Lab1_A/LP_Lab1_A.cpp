@@ -297,18 +297,6 @@ int main() {
 	// Call the printHeaderAndData function to print header and car data
 	printHeaderAndData(mainCars, maxMakeWidth, maxConsumptionWidth, maxPowerWidth);
 
-	//thread mainThread = thread(processCarData, 0, maxMakeWidth, maxConsumptionWidth, maxPowerWidth, mainCars, "MainThread", filterThreshold);
-
-	//thread threads[threadCount];
-	//for (int i = 0; i < threadCount; ++i) {
-	//	threads[i] = thread(processCarData, i + 1, maxMakeWidth, maxConsumptionWidth, maxPowerWidth, mainCars, "WorkerThread", filterThreshold);
-	//}
-
-	//// Add cars into the data monitor
-	//for (int i = mainCars.size() - 1; i >= 0; --i) {
-	//	dataMonitor.add(mainCars[i]);
-	//}
-
 	vector<thread> threads;
 	for (int i = 0; i < threadCount; i++)
 	{
@@ -326,10 +314,6 @@ int main() {
 	for_each(threads.begin(), threads.end(), mem_fn(&thread::join));
 
 	//this_thread::sleep_for(std::chrono::seconds(10));
-	// Wait for the main thread to finish
-	//for (auto& thread : threads) {
-	//	thread.join();
-	//}
 
 	// Print a message indicating that the DataMonitor is completely empty
 	cout << "DataMonitor is completely empty." << endl;
@@ -339,7 +323,6 @@ int main() {
 	sortedCars = resultMonitor.getFilteredCars();
 	for (size_t i = 0; i < resultMonitor.getCount(); i++)
 	{
-		//outputResults(threadCount, maxMakeWidth, maxConsumptionWidth, maxPowerWidth, sortedCars[i], "", filterThreshold);
 		resultMonitor.printResult(sortedCars[i], maxMakeWidth, maxConsumptionWidth, maxPowerWidth);
 	}
 	return 0;
